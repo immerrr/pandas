@@ -371,9 +371,9 @@ class TestBlockManager(tm.TestCase):
         assert_frame_equal(DataFrame(mgr), DataFrame(mgr2))
 
     def test_get_scalar(self):
-        for item in self.mgr.items:
+        for j, item in enumerate(self.mgr.items):
             for i, index in enumerate(self.mgr.axes[1]):
-                res = self.mgr.get_scalar((item, index))
+                res = self.mgr.get_scalar((j, i))
                 exp = self.mgr.get(item, fastpath=False)[i]
                 assert_almost_equal(res, exp)
                 exp = self.mgr.get(item).values[i]

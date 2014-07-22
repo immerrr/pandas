@@ -56,7 +56,7 @@ class _NDFrameIndexer(object):
 
     def __iter__(self):
         raise NotImplementedError('ix is not iterable')
-
+ 
     def __getitem__(self, key):
         if type(key) is tuple:
             try:
@@ -1474,18 +1474,26 @@ class _AtIndexer(_ScalarAccessIndexer):
 class _iAtIndexer(_ScalarAccessIndexer):
 
     """ integer based scalar accessor """
-    _takeable = True
+    def __getitem__(self, indexer):
+        if not isinstance(indexer, tuple):
+            indexer = (indexer,)
 
-    def _has_valid_setitem_indexer(self, indexer):
-        self._has_valid_positional_setitem_indexer(indexer)
+        if self.obj.ndim == 2:
+            # frame-transpose hack
+            indexer = indexer[::-1]
 
-    def _convert_key(self, key):
-        """ require  integer args (and convert to label arguments) """
-        for a, i in zip(self.obj.axes, key):
-            if not com.is_integer(i):
-                raise ValueError("iAt based indexing can only have integer "
-                                 "indexers")
-        return key
+        return self.obj._data.get_scalar(indexer)
+
+    def __setitem__(self, indexer, value):
+        if not isinstance(indexer, tuple):
+            indexer = (indexer,)
+
+        if self.obj.ndim == 2:
+            # frame-transpose hack
+            indexer = indexer[::-1]
+
+        return self.obj._data.set_scalar(indexer, value)
+
 
 # 32-bit floating point machine epsilon
 _eps = np.finfo('f4').eps

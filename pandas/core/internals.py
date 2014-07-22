@@ -24,6 +24,8 @@ import pandas.tslib as tslib
 import pandas.computation.expressions as expressions
 from pandas.util.decorators import cache_readonly
 
+from pandas.index import convert_scalar
+
 from pandas.tslib import Timestamp
 from pandas import compat, _np_version_under1p7
 from pandas.compat import range, map, zip, u
@@ -176,6 +178,26 @@ class Block(PandasObject):
             raise ValueError("Only same dim slicing is allowed")
 
         return self.make_block_same_class(new_values, new_mgr_locs)
+
+    def get_scalar_value(self, tup):
+        """
+        Parameters
+        ----------
+        tup : tuple of int
+        """
+        return self.values[tup]
+
+    def set_scalar_value(self, tup, val):
+        """
+
+        Parameters
+        ----------
+        tup : tuple of int
+        val : object
+
+        """
+        arr = self.values
+        arr[tup] = convert_scalar(arr, val)
 
     @property
     def shape(self):
@@ -1558,6 +1580,28 @@ class CategoricalBlock(NonConsolidatableMixIn, ObjectBlock):
                                                fastpath=True, placement=placement,
                                                **kwargs)
 
+    def get_scalar_value(self, tup):
+        if self.ndim == 2:
+            assert tup[0] == 0
+            tup = tup[1:]
+        return Block.get_scalar_value(self, tup)
+
+    def set_scalar_value(self, tup, val):
+        """
+
+        Parameters
+        ----------
+        tup : tuple of int
+        val : object
+
+        """
+        if self.ndim == 2:
+            assert tup[0] == 0
+            tup = tup[1:]
+
+        arr = self.values
+        arr[tup] = val
+
     def to_dense(self):
         return self.values.to_dense().view()
 
@@ -1719,6 +1763,14 @@ class DatetimeBlock(Block):
         elif isinstance(result, (np.integer, np.datetime64)):
             result = lib.Timestamp(result)
         return result
+
+    def get_scalar_value(self, tup):
+        """
+        Parameters
+        ----------
+        tup : tuple of int
+        """
+        return lib.Timestamp(self.values[tup])
 
     @property
     def fill_value(self):
@@ -2800,18 +2852,62 @@ class BlockManager(PandasObject):
                                                                 fastpath=True) ],
                                   self.axes[1])
 
+    def _verify_scalar_indexer(self, tup):
+        if type(tup) is not tuple:
+            raise TypeError("indexer for a scalar must be a tuple")
+
+        if len(tup) != self.ndim:
+            raise ValueError("indexer for a scalar must use all dimensions")
+
+        if any(not com.is_integer(i) for i in tup):
+            raise ValueError("indexer for a scalar must only contain ints")
+
+    def _resolve_scalar_indexer(self, tup):
+        """
+        Look up block and block indexer for a given manager scalar indexer.
+
+        Parameters
+        ----------
+        tup : tuple of int
+
+        Returns
+        -------
+        block : Block
+        block_indexer : tuple of int
+
+        """
+        self._verify_scalar_indexer(tup)
+
+        item_no = tup[0]
+        return (self.blocks[self._blknos[item_no]],
+                (self._blklocs[item_no],) + tup[1:])
 
     def get_scalar(self, tup):
-        """
-        Retrieve single item
-        """
-        full_loc = list(ax.get_loc(x)
-                        for ax, x in zip(self.axes, tup))
-        blk = self.blocks[self._blknos[full_loc[0]]]
-        full_loc[0] = self._blklocs[full_loc[0]]
+        """Retrieve single element.
 
-        # FIXME: this may return non-upcasted types?
-        return blk.values[tuple(full_loc)]
+        Parameters
+        ----------
+        tup : tuple of int
+            location specifier
+
+        """
+        blk, blk_indexer = self._resolve_scalar_indexer(tup)
+        return blk.get_scalar_value(blk_indexer)
+
+    def set_scalar(self, tup, val):
+        """
+        Set single element.
+
+        Parameters
+        ----------
+        tup : tuple of int
+            location specifier
+        val : object
+            new value
+
+        """
+        blk, blk_indexer = self._resolve_scalar_indexer(tup)
+        return blk.set_scalar_value(blk_indexer, val)
 
     def delete(self, item):
         """
@@ -3339,6 +3435,23 @@ class SingleBlockManager(BlockManager):
 
         return self.__class__(self._block._slice(slobj),
                               self.index[slobj], fastpath=True)
+
+    def _resolve_scalar_indexer(self, tup):
+        """
+        Look up block and block indexer for a given manager scalar indexer.
+
+        Parameters
+        ----------
+        tup : tuple of int
+
+        Returns
+        -------
+        block : Block
+        block_indexer : tuple of int
+
+        """
+        self._verify_scalar_indexer(tup)
+        return self._block, tup
 
     @property
     def index(self):

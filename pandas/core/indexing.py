@@ -1466,14 +1466,23 @@ class _ScalarAccessIndexer(_NDFrameIndexer):
 
 
 class _AtIndexer(_ScalarAccessIndexer):
-
     """ label based scalar accessor """
-    _takeable = False
+
+    def __getitem__(self, indexer):
+        axes = self.obj.axes
+        return self.obj._data.get_scalar(
+            axes[0].getitem_labels_nd(indexer, axes[1:], typ='at-get'))
+
+    def __setitem__(self, indexer, value):
+        axes = self.obj.axes
+        return self.obj._data.set_scalar(
+            axes[0].getitem_labels_nd(indexer, axes[1:], typ='at-set'),
+            value)
 
 
 class _iAtIndexer(_ScalarAccessIndexer):
+    """ location based scalar accessor """
 
-    """ integer based scalar accessor """
     def __getitem__(self, indexer):
         if not isinstance(indexer, tuple):
             indexer = (indexer,)

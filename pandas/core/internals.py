@@ -1583,7 +1583,8 @@ class CategoricalBlock(NonConsolidatableMixIn, ObjectBlock):
     def get_scalar_value(self, tup):
         if self.ndim == 2:
             assert tup[0] == 0
-            tup = tup[1:]
+            assert len(tup) == 2
+            tup = tup[1]
         return Block.get_scalar_value(self, tup)
 
     def set_scalar_value(self, tup, val):
@@ -2852,23 +2853,33 @@ class BlockManager(PandasObject):
                                                                 fastpath=True) ],
                                   self.axes[1])
 
-    def _verify_scalar_indexer(self, tup):
-        if type(tup) is not tuple:
-            raise TypeError("indexer for a scalar must be a tuple")
+    def _verify_scalar_indexer(self, loc):
+        # if 2+ dims, require a tuple
+        # if tuple, require len == ndim
+        # if not tuple, require integer and ndim == 1
 
-        if len(tup) != self.ndim:
-            raise ValueError("indexer for a scalar must use all dimensions")
+        if type(loc) is not tuple:
+            if self.ndim == 1:
+                if not com.isinteger(i):
+                    raise ValueError("indexer for a scalar must only contain ints")
+            else:
+                raise TypeError("indexer for a scalar must be a tuple")
+        else:
+            if len(loc) < self.ndim:
+                raise ValueError("indexer for a scalar must use all dimensions")
+            if len(loc) > self.ndim:
+                raise ValueError("indexer for a scalar uses too many dimensions")
 
-        if any(not com.is_integer(i) for i in tup):
-            raise ValueError("indexer for a scalar must only contain ints")
+            if any(not com.is_integer(i) for i in loc):
+                raise ValueError("indexer for a scalar must only contain ints")
 
-    def _resolve_scalar_indexer(self, tup):
+    def _resolve_scalar_indexer(self, loc):
         """
         Look up block and block indexer for a given manager scalar indexer.
 
         Parameters
         ----------
-        tup : tuple of int
+        loc : tuple of int
 
         Returns
         -------
@@ -2876,11 +2887,11 @@ class BlockManager(PandasObject):
         block_indexer : tuple of int
 
         """
-        self._verify_scalar_indexer(tup)
+        self._verify_scalar_indexer(loc)
 
-        item_no = tup[0]
+        item_no = loc[0]
         return (self.blocks[self._blknos[item_no]],
-                (self._blklocs[item_no],) + tup[1:])
+                (self._blklocs[item_no],) + loc[1:])
 
     def get_scalar(self, tup):
         """Retrieve single element.
@@ -3436,13 +3447,13 @@ class SingleBlockManager(BlockManager):
         return self.__class__(self._block._slice(slobj),
                               self.index[slobj], fastpath=True)
 
-    def _resolve_scalar_indexer(self, tup):
+    def _resolve_scalar_indexer(self, loc):
         """
         Look up block and block indexer for a given manager scalar indexer.
 
         Parameters
         ----------
-        tup : tuple of int
+        loc : int or tuple (int,)
 
         Returns
         -------
@@ -3450,8 +3461,8 @@ class SingleBlockManager(BlockManager):
         block_indexer : tuple of int
 
         """
-        self._verify_scalar_indexer(tup)
-        return self._block, tup
+        self._verify_scalar_indexer(loc)
+        return self._block, loc
 
     @property
     def index(self):

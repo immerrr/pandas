@@ -1831,6 +1831,41 @@ class Index(IndexOpsMixin, FrozenNDArray):
             raise ValueError('labels %s not contained in axis' % labels[mask])
         return self.delete(indexer)
 
+    def getitem_labels(self, indexer, typ):
+        try:
+            return self.get_loc(indexer)
+        except KeyError:
+            # if typ.endswith('set'):
+            #     return -1
+            # else:
+                raise
+
+    def getitem_labels_nd(self, indexer, other_axes, typ=None):
+        """
+        Parameters
+        ----------
+        indexer : object or tuple
+            label(-s) to look up
+        other_axes : tuple
+            rest of the axes in the container
+        typ : {None, 'at-get', 'at-set'}
+            lookup type
+
+        """
+        if type(indexer) is not tuple:
+            # multiindex is handled in MultiIndex class
+            return (self.getitem_labels(indexer, typ=typ),)
+        else:
+            result = ((self.getitem_labels(indexer[0], typ=typ),) +
+                      tuple(ax_i.getitem_labels(indexer_i, typ=typ)
+                            for ax_i, indexer_i in zip(other_axes, indexer[1:])))
+
+            if len(other_axes) == 1:
+                # frame-transpose hack
+                result = result[::-1]
+
+            return result
+
 
 class Int64Index(Index):
 

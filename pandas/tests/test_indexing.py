@@ -329,7 +329,39 @@ class TestIndexing(tm.TestCase):
         xp     = s.values[5]
         self.assertEqual(result, xp)
 
+    def test_at_multiindex_series(self):
+        mi = pd.MultiIndex.from_product([list('ab'), [0, 1]])
+        s = pd.Series(np.arange(4) + 100, index=mi)
+        df = pd.DataFrame(np.arange(8).reshape(4, 2) + 1, index=mi,
+                          columns=[3, 4])
+
+        self.assertEqual(s.at['b', 0], 102)
+        self.assertEqual(df.at[('b', 0), 1], 106)
+
+        # mi + datetime/string lookup?
+
+    def test_at_invalid_args(self):
+        s.at['a']  # must fail: nindexer < nlevels
+        s.at['a', 0, 3]  # must fail: nindexers > nlevels
+        s.at[('a', 0), 3]  # must fail: nindexers > naxes
+
+        df.at['a', 0]  # must fail: nindexers < naxes
+        df.at['a', 3]  # must fail: nindexers < nlevels; (a,3) is not in index
+
+        df.at['a', 0, 3]  # must fail: nindexers > nlevels
+        df.at[('a', 0), 3, 3]  # must fail: nindexers > naxes
+        df.at[(('a', 0),)]  # must fail: nindexers < naxes
+
+
     def test_iat_invalid_args(self):
+        # s: nindexers < naxes
+        # s: nindexers > naxes
+
+        # df: nindexers < naxes
+        # df: nindexers > naxes
+
+        # s: indexer is tuple, not integer
+        # df: indexer is tuple, not integer
         pass
 
     def test_imethods_with_dups(self):

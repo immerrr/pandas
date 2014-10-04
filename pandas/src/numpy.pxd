@@ -29,6 +29,9 @@ cdef extern from "numpy/arrayobject.h":
     ctypedef Py_intptr_t npy_intp
     ctypedef size_t npy_uintp
 
+    ctypedef struct PyArray_Descr:
+        pass
+
     cdef enum NPY_TYPES:
         NPY_BOOL
         NPY_BYTE
@@ -117,6 +120,8 @@ cdef extern from "numpy/arrayobject.h":
     enum:
         NPY_C_CONTIGUOUS
         NPY_F_CONTIGUOUS
+        NPY_ARRAY_C_CONTIGUOUS
+        NPY_ARRAY_F_CONTIGUOUS
         NPY_CONTIGUOUS
         NPY_FORTRAN
         NPY_OWNDATA
@@ -213,11 +218,11 @@ cdef extern from "numpy/arrayobject.h":
                 copy_shape = 0
 
             if ((flags & pybuf.PyBUF_C_CONTIGUOUS == pybuf.PyBUF_C_CONTIGUOUS)
-                and not PyArray_CHKFLAGS(self, NPY_C_CONTIGUOUS)):
+                and not PyArray_CHKFLAGS(self, NPY_ARRAY_C_CONTIGUOUS)):
                 raise ValueError(u"ndarray is not C contiguous")
 
             if ((flags & pybuf.PyBUF_F_CONTIGUOUS == pybuf.PyBUF_F_CONTIGUOUS)
-                and not PyArray_CHKFLAGS(self, NPY_F_CONTIGUOUS)):
+                and not PyArray_CHKFLAGS(self, NPY_ARRAY_F_CONTIGUOUS)):
                 raise ValueError(u"ndarray is not Fortran contiguous")
 
             info.buf = PyArray_DATA(self)
@@ -239,7 +244,8 @@ cdef extern from "numpy/arrayobject.h":
 
             cdef int t
             cdef char* f = NULL
-            cdef dtype descr = self.descr
+            cdef PyArray_Descr* raw_descr = PyArray_DESCR(self)
+            cdef dtype descr = <dtype>raw_descr
             cdef list stack
             cdef int offset
 
@@ -393,7 +399,7 @@ cdef extern from "numpy/arrayobject.h":
     npy_intp PyArray_STRIDE(ndarray, size_t)
 
     # object PyArray_BASE(ndarray) wrong refcount semantics
-    # dtype PyArray_DESCR(ndarray) wrong refcount semantics
+    PyArray_Descr* PyArray_DESCR(ndarray)
     int PyArray_FLAGS(ndarray)
     npy_intp PyArray_ITEMSIZE(ndarray)
     int PyArray_TYPE(ndarray arr)
@@ -967,18 +973,15 @@ cdef extern from "numpy/ufuncobject.h":
     void import_ufunc()
 
 
-cdef inline void set_array_base(ndarray arr, object base):
-     cdef PyObject* baseptr
-     if base is None:
-         baseptr = NULL
-     else:
-         Py_INCREF(base) # important to do this before decref below!
-         baseptr = <PyObject*>base
-     Py_XDECREF(arr.base)
-     arr.base = baseptr
+# cdef inline void set_array_base(ndarray arr, object base):
+#      cdef PyObject* baseptr = <PyObject*>base
+#      # SetBaseObject *steals* the reference, so need to INCREF it beforehand?
+#      Py_INCREF(baseptr)
+#      PyArray_SetBaseObject(arr, baseptr)
 
-cdef inline object get_array_base(ndarray arr):
-    if arr.base is NULL:
-        return None
-    else:
-        return <object>arr.base
+# cdef inline object get_array_base(ndarray arr):
+#     cdef PyObject* base = PyArray_BASE(arr)
+#     if base is NULL:
+#         return None
+#     else:
+#         return <object>base

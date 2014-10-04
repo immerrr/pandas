@@ -55,9 +55,9 @@ cdef inline is_definitely_invalid_key(object val):
             or PyList_Check(val) or hasattr(val,'_data'))
 
 def get_value_at(ndarray arr, object loc):
-    if arr.descr.type_num == NPY_DATETIME:
+    if cnp.PyArray_TYPE(arr) == NPY_DATETIME:
         return Timestamp(util.get_value_at(arr, loc))
-    elif arr.descr.type_num == NPY_TIMEDELTA:
+    elif cnp.PyArray_TYPE(arr) == NPY_TIMEDELTA:
         return Timedelta(util.get_value_at(arr, loc))
     return util.get_value_at(arr, loc)
 
@@ -108,9 +108,9 @@ cdef class IndexEngine:
         if PySlice_Check(loc) or cnp.PyArray_Check(loc):
             return arr[loc]
         else:
-            if arr.descr.type_num == NPY_DATETIME:
+            if cnp.PyArray_TYPE(arr) == NPY_DATETIME:
                 return Timestamp(util.get_value_at(arr, loc))
-            elif arr.descr.type_num == NPY_TIMEDELTA:
+            elif cnp.PyArray_TYPE(arr) == NPY_TIMEDELTA:
                 return Timedelta(util.get_value_at(arr, loc))
             return util.get_value_at(arr, loc)
 
@@ -592,7 +592,7 @@ cdef class TimedeltaEngine(DatetimeEngine):
         return 'm8[ns]'
 
 cpdef convert_scalar(ndarray arr, object value):
-    if arr.descr.type_num == NPY_DATETIME:
+    if cnp.PyArray_TYPE(arr) == NPY_DATETIME:
         if isinstance(value,np.ndarray):
             pass
         elif isinstance(value, Timestamp):
@@ -601,7 +601,7 @@ cpdef convert_scalar(ndarray arr, object value):
             return iNaT
         else:
             return Timestamp(value).value
-    elif arr.descr.type_num == NPY_TIMEDELTA:
+    elif cnp.PyArray_TYPE(arr) == NPY_TIMEDELTA:
         if isinstance(value,np.ndarray):
             pass
         elif isinstance(value, Timedelta):

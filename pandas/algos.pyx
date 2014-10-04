@@ -1852,7 +1852,6 @@ def roll_generic(ndarray[float64_t, cast=True] input,
     cdef ndarray[double_t] output, counts, bufarr
     cdef Py_ssize_t i, n
     cdef float64_t *buf
-    cdef float64_t *oldbuf
 
     if not input.flags.c_contiguous:
         input = input.copy('C')
@@ -1872,18 +1871,18 @@ def roll_generic(ndarray[float64_t, cast=True] input,
         else:
             output[i] = NaN
 
+    cdef npy_intp win_shape = win
+    cdef int typenum = PyArray_TYPE(input)
+
     # remaining full-length windows
-    buf = <float64_t*> input.data
-    bufarr = np.empty(win, dtype=float)
-    oldbuf = <float64_t*> bufarr.data
+    buf = <float64_t*> PyArray_DATA(input)
     for i from (win - offset) <= i < (n - offset):
         buf = buf + 1
-        bufarr.data = <char*> buf
+        bufarr = PyArray_SimpleNewFromData(1, &win_shape, typenum, buf)
         if counts[i] >= minp:
             output[i] = func(bufarr, *args, **kwargs)
         else:
             output[i] = NaN
-    bufarr.data = <char*> oldbuf
 
     # truncated windows at the end
     for i from int_max(n - offset, 0) <= i < n:
@@ -1981,7 +1980,7 @@ def is_lexsorted(list list_of_arrays):
         # vecs[i] = <int64_t *> (<ndarray> list_of_arrays[i]).data
 
         arr = list_of_arrays[i]
-        vecs[i] = <int64_t *> arr.data
+        vecs[i] = <int64_t *> PyArray_DATA(arr)
     # assume uniqueness??
 
     for i from 1 <= i < n:
@@ -2017,7 +2016,7 @@ def groupby_indices(ndarray values):
     for i from 0 <= i < len(counts):
         arr = np.empty(counts[i], dtype=np.int64)
         result[ids[i]] = arr
-        vecs[i] = <int64_t *> arr.data
+        vecs[i] = <int64_t *> PyArray_DATA(arr)
 
     for i from 0 <= i < n:
         k = labels[i]
@@ -2312,7 +2311,7 @@ def group_median(ndarray[float64_t, ndim=2] out,
     counts[:] = _counts[1:]
 
     data = np.empty((K, N), dtype=np.float64)
-    ptr = <float64_t*> data.data
+    ptr = <float64_t*> PyArray_DATA(data)
 
     take_2d_axis1_float64_float64(values.T, indexer, out=data)
 

@@ -487,7 +487,9 @@ for name, data in ext_data.items():
     obj = Extension('pandas.%s' % name,
                     sources=sources,
                     depends=data.get('depends', []),
-                    include_dirs=include)
+                    include_dirs=include,
+                    define_macros=[('NPY_NO_DEPRECATED_API',
+                                    'NPY_1_7_API_VERSION')])
 
     extensions.append(obj)
 

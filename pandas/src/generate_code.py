@@ -44,11 +44,11 @@ PyDateTime_IMPORT
 import_array()
 import_ufunc()
 
-cdef int PLATFORM_INT = (<ndarray> np.arange(0, dtype=np.int_)).descr.type_num
+cdef int PLATFORM_INT = np.PyArray_TYPE(np.arange(0, dtype=np.int_))
 
 cpdef ensure_platform_int(object arr):
     if util.is_array(arr):
-        if (<ndarray> arr).descr.type_num == PLATFORM_INT:
+        if np.PyArray_TYPE(arr) == PLATFORM_INT:
             return arr
         else:
             return arr.astype(np.int_)
@@ -57,7 +57,7 @@ cpdef ensure_platform_int(object arr):
 
 cpdef ensure_object(object arr):
     if util.is_array(arr):
-        if (<ndarray> arr).descr.type_num == NPY_OBJECT:
+        if np.PyArray_TYPE(arr) == NPY_OBJECT:
             return arr
         else:
             return arr.astype(np.object_)
@@ -1164,10 +1164,10 @@ def group_var_bin_%(name)s(ndarray[%(dest_type2)s, ndim=2] out,
 
 group_count_template = """@cython.boundscheck(False)
 @cython.wraparound(False)
-def group_count_%(name)s(ndarray[%(dest_type2)s, ndim=2] out,
-                         ndarray[int64_t] counts,
-                         ndarray[%(c_type)s, ndim=2] values,
-                         ndarray[int64_t] labels):
+def group_count_%(name)s(%(dest_type2)s[:, :] out,
+                         int64_t[:] counts,
+                         %(c_type)s[:, :] values,
+                         int64_t[:] labels):
     '''
     Only aggregates on axis=0
     '''
@@ -1202,10 +1202,10 @@ def group_count_%(name)s(ndarray[%(dest_type2)s, ndim=2] out,
 
 group_count_bin_template = """@cython.boundscheck(False)
 @cython.wraparound(False)
-def group_count_bin_%(name)s(ndarray[%(dest_type2)s, ndim=2] out,
-                             ndarray[int64_t] counts,
-                             ndarray[%(c_type)s, ndim=2] values,
-                             ndarray[int64_t] bins):
+def group_count_bin_%(name)s(%(dest_type2)s[:, :] out,
+                             int64_t[:] counts,
+                             %(c_type)s[:, :] values,
+                             int64_t[:] bins):
     '''
     Only aggregates on axis=0
     '''
@@ -1603,10 +1603,10 @@ def group_mean_bin_%(name)s(ndarray[%(dest_type2)s, ndim=2] out,
 
 group_ohlc_template = """@cython.wraparound(False)
 @cython.boundscheck(False)
-def group_ohlc_%(name)s(ndarray[%(dest_type2)s, ndim=2] out,
-                  ndarray[int64_t] counts,
-                  ndarray[%(dest_type2)s, ndim=2] values,
-                  ndarray[int64_t] bins):
+def group_ohlc_%(name)s(%(dest_type2)s[:, :] out,
+                  int64_t[:] counts,
+                  %(dest_type2)s[:, :] values,
+                  int64_t[:] bins):
     '''
     Only aggregates on axis=0
     '''
@@ -1678,7 +1678,7 @@ def group_ohlc_%(name)s(ndarray[%(dest_type2)s, ndim=2] out,
 
 arrmap_template = """@cython.wraparound(False)
 @cython.boundscheck(False)
-def arrmap_%(name)s(ndarray[%(c_type)s] index, object func):
+def arrmap_%(name)s(%(c_type)s[:] index, object func):
     cdef Py_ssize_t length = index.shape[0]
     cdef Py_ssize_t i = 0
 
@@ -2183,7 +2183,7 @@ def outer_join_indexer_%(name)s(ndarray[%(c_type)s] left,
 ensure_dtype_template = """
 cpdef ensure_%(name)s(object arr):
     if util.is_array(arr):
-        if (<ndarray> arr).descr.type_num == NPY_%(ctype)s:
+        if np.PyArray_TYPE(arr) == NPY_%(ctype)s:
             return arr
         else:
             return arr.astype(np.%(dtype)s)

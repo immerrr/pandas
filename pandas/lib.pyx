@@ -912,7 +912,7 @@ def clean_index_list(list obj):
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def max_len_string_array(ndarray[object, ndim=1] arr):
+def max_len_string_array(object[:] arr):
     """ return the maximum size of elements in a 1-dim string array """
     cdef:
         int i, m, l
@@ -932,7 +932,7 @@ def max_len_string_array(ndarray[object, ndim=1] arr):
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def string_array_replace_from_nan_rep(ndarray[object, ndim=1] arr, object nan_rep, object replace = None):
+def string_array_replace_from_nan_rep(object[:] arr, object nan_rep, object replace = None):
     """ replace the values in the array with replacement if they are nan_rep; return the same array """
 
     cdef int length = arr.shape[0], i = 0
@@ -995,7 +995,7 @@ def write_csv_rows(list data, list data_index, int nlevels, list cols, object wr
 # Groupby-related functions
 
 @cython.boundscheck(False)
-def arrmap(ndarray[object] index, object func):
+def arrmap(object[:] index, object func):
     cdef int length = index.shape[0]
     cdef int i = 0
 

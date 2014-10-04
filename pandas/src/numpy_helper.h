@@ -134,7 +134,7 @@ PyObject* sarr_from_data(PyArray_Descr *descr, int length, void* data) {
                                                    NULL, data, 0, NULL);
 
     // Returned array doesn't own data by default
-    result->flags |= NPY_OWNDATA;
+    PyArray_ENABLEFLAGS(result, NPY_ARRAY_OWNDATA);
 
     return (PyObject*) result;
 }
@@ -159,11 +159,11 @@ void transfer_object_column(char *dst, char *src, size_t stride,
 }
 
 void set_array_owndata(PyArrayObject *ao) {
-    ao->flags |= NPY_OWNDATA;
+    PyArray_ENABLEFLAGS(ao, NPY_ARRAY_OWNDATA);
 }
 
 void set_array_not_contiguous(PyArrayObject *ao) {
-    ao->flags &= ~(NPY_C_CONTIGUOUS | NPY_F_CONTIGUOUS);
+    PyArray_CLEARFLAGS(ao, NPY_ARRAY_C_CONTIGUOUS | NPY_ARRAY_F_CONTIGUOUS);
 }
 
 
@@ -173,7 +173,8 @@ PANDAS_INLINE PyObject*
 unbox_if_zerodim(PyObject* arr) {
     if (PyArray_IsZeroDim(arr)) {
         PyObject *ret;
-        ret = PyArray_ToScalar(PyArray_DATA(arr), arr);
+        ret = PyArray_ToScalar(PyArray_DATA((PyArrayObject*)arr),
+                               (PyArrayObject*)arr);
         return ret;
     } else {
         Py_INCREF(arr);

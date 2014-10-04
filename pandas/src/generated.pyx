@@ -38,11 +38,11 @@ PyDateTime_IMPORT
 import_array()
 import_ufunc()
 
-cdef int PLATFORM_INT = (<ndarray> np.arange(0, dtype=np.int_)).descr.type_num
+cdef int PLATFORM_INT = np.PyArray_TYPE(np.arange(0, dtype=np.int_))
 
 cpdef ensure_platform_int(object arr):
     if util.is_array(arr):
-        if (<ndarray> arr).descr.type_num == PLATFORM_INT:
+        if np.PyArray_TYPE(arr) == PLATFORM_INT:
             return arr
         else:
             return arr.astype(np.int_)
@@ -51,7 +51,7 @@ cpdef ensure_platform_int(object arr):
 
 cpdef ensure_object(object arr):
     if util.is_array(arr):
-        if (<ndarray> arr).descr.type_num == NPY_OBJECT:
+        if np.PyArray_TYPE(arr) == NPY_OBJECT:
             return arr
         else:
             return arr.astype(np.object_)
@@ -64,7 +64,7 @@ cpdef ensure_object(object arr):
 
 cpdef ensure_float64(object arr):
     if util.is_array(arr):
-        if (<ndarray> arr).descr.type_num == NPY_FLOAT64:
+        if np.PyArray_TYPE(arr) == NPY_FLOAT64:
             return arr
         else:
             return arr.astype(np.float64)
@@ -74,7 +74,7 @@ cpdef ensure_float64(object arr):
 
 cpdef ensure_float32(object arr):
     if util.is_array(arr):
-        if (<ndarray> arr).descr.type_num == NPY_FLOAT32:
+        if np.PyArray_TYPE(arr) == NPY_FLOAT32:
             return arr
         else:
             return arr.astype(np.float32)
@@ -84,7 +84,7 @@ cpdef ensure_float32(object arr):
 
 cpdef ensure_int8(object arr):
     if util.is_array(arr):
-        if (<ndarray> arr).descr.type_num == NPY_INT8:
+        if np.PyArray_TYPE(arr) == NPY_INT8:
             return arr
         else:
             return arr.astype(np.int8)
@@ -94,7 +94,7 @@ cpdef ensure_int8(object arr):
 
 cpdef ensure_int16(object arr):
     if util.is_array(arr):
-        if (<ndarray> arr).descr.type_num == NPY_INT16:
+        if np.PyArray_TYPE(arr) == NPY_INT16:
             return arr
         else:
             return arr.astype(np.int16)
@@ -104,7 +104,7 @@ cpdef ensure_int16(object arr):
 
 cpdef ensure_int32(object arr):
     if util.is_array(arr):
-        if (<ndarray> arr).descr.type_num == NPY_INT32:
+        if np.PyArray_TYPE(arr) == NPY_INT32:
             return arr
         else:
             return arr.astype(np.int32)
@@ -114,7 +114,7 @@ cpdef ensure_int32(object arr):
 
 cpdef ensure_int64(object arr):
     if util.is_array(arr):
-        if (<ndarray> arr).descr.type_num == NPY_INT64:
+        if np.PyArray_TYPE(arr) == NPY_INT64:
             return arr
         else:
             return arr.astype(np.int64)
@@ -2131,7 +2131,7 @@ def groupby_bool(ndarray[uint8_t] index, ndarray labels):
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-def arrmap_float64(ndarray[float64_t] index, object func):
+def arrmap_float64(float64_t[:] index, object func):
     cdef Py_ssize_t length = index.shape[0]
     cdef Py_ssize_t i = 0
 
@@ -2146,7 +2146,7 @@ def arrmap_float64(ndarray[float64_t] index, object func):
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-def arrmap_float32(ndarray[float32_t] index, object func):
+def arrmap_float32(float32_t[:] index, object func):
     cdef Py_ssize_t length = index.shape[0]
     cdef Py_ssize_t i = 0
 
@@ -2161,7 +2161,7 @@ def arrmap_float32(ndarray[float32_t] index, object func):
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-def arrmap_object(ndarray[object] index, object func):
+def arrmap_object(object[:] index, object func):
     cdef Py_ssize_t length = index.shape[0]
     cdef Py_ssize_t i = 0
 
@@ -2176,7 +2176,7 @@ def arrmap_object(ndarray[object] index, object func):
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-def arrmap_int32(ndarray[int32_t] index, object func):
+def arrmap_int32(int32_t[:] index, object func):
     cdef Py_ssize_t length = index.shape[0]
     cdef Py_ssize_t i = 0
 
@@ -2191,7 +2191,7 @@ def arrmap_int32(ndarray[int32_t] index, object func):
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-def arrmap_int64(ndarray[int64_t] index, object func):
+def arrmap_int64(int64_t[:] index, object func):
     cdef Py_ssize_t length = index.shape[0]
     cdef Py_ssize_t i = 0
 
@@ -2206,7 +2206,7 @@ def arrmap_int64(ndarray[int64_t] index, object func):
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-def arrmap_bool(ndarray[uint8_t] index, object func):
+def arrmap_bool(uint8_t[:] index, object func):
     cdef Py_ssize_t length = index.shape[0]
     cdef Py_ssize_t i = 0
 
@@ -6479,10 +6479,10 @@ def group_max_bin_float32(ndarray[float32_t, ndim=2] out,
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-def group_ohlc_float64(ndarray[float64_t, ndim=2] out,
-                  ndarray[int64_t] counts,
-                  ndarray[float64_t, ndim=2] values,
-                  ndarray[int64_t] bins):
+def group_ohlc_float64(float64_t[:, :] out,
+                  int64_t[:] counts,
+                  float64_t[:, :] values,
+                  int64_t[:] bins):
     '''
     Only aggregates on axis=0
     '''
@@ -6552,10 +6552,10 @@ def group_ohlc_float64(ndarray[float64_t, ndim=2] out,
             out[b, 3] = vclose
 @cython.wraparound(False)
 @cython.boundscheck(False)
-def group_ohlc_float32(ndarray[float32_t, ndim=2] out,
-                  ndarray[int64_t] counts,
-                  ndarray[float32_t, ndim=2] values,
-                  ndarray[int64_t] bins):
+def group_ohlc_float32(float32_t[:, :] out,
+                  int64_t[:] counts,
+                  float32_t[:, :] values,
+                  int64_t[:] bins):
     '''
     Only aggregates on axis=0
     '''
@@ -6626,10 +6626,10 @@ def group_ohlc_float32(ndarray[float32_t, ndim=2] out,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def group_count_float64(ndarray[float64_t, ndim=2] out,
-                         ndarray[int64_t] counts,
-                         ndarray[float64_t, ndim=2] values,
-                         ndarray[int64_t] labels):
+def group_count_float64(float64_t[:, :] out,
+                         int64_t[:] counts,
+                         float64_t[:, :] values,
+                         int64_t[:] labels):
     '''
     Only aggregates on axis=0
     '''
@@ -6662,10 +6662,10 @@ def group_count_float64(ndarray[float64_t, ndim=2] out,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def group_count_float32(ndarray[float32_t, ndim=2] out,
-                         ndarray[int64_t] counts,
-                         ndarray[float32_t, ndim=2] values,
-                         ndarray[int64_t] labels):
+def group_count_float32(float32_t[:, :] out,
+                         int64_t[:] counts,
+                         float32_t[:, :] values,
+                         int64_t[:] labels):
     '''
     Only aggregates on axis=0
     '''
@@ -6698,10 +6698,10 @@ def group_count_float32(ndarray[float32_t, ndim=2] out,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def group_count_object(ndarray[object, ndim=2] out,
-                         ndarray[int64_t] counts,
-                         ndarray[object, ndim=2] values,
-                         ndarray[int64_t] labels):
+def group_count_object(object[:, :] out,
+                         int64_t[:] counts,
+                         object[:, :] values,
+                         int64_t[:] labels):
     '''
     Only aggregates on axis=0
     '''
@@ -6734,10 +6734,10 @@ def group_count_object(ndarray[object, ndim=2] out,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def group_count_int64(ndarray[float64_t, ndim=2] out,
-                         ndarray[int64_t] counts,
-                         ndarray[int64_t, ndim=2] values,
-                         ndarray[int64_t] labels):
+def group_count_int64(float64_t[:, :] out,
+                         int64_t[:] counts,
+                         int64_t[:, :] values,
+                         int64_t[:] labels):
     '''
     Only aggregates on axis=0
     '''
@@ -6771,10 +6771,10 @@ def group_count_int64(ndarray[float64_t, ndim=2] out,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def group_count_bin_float64(ndarray[float64_t, ndim=2] out,
-                             ndarray[int64_t] counts,
-                             ndarray[float64_t, ndim=2] values,
-                             ndarray[int64_t] bins):
+def group_count_bin_float64(float64_t[:, :] out,
+                             int64_t[:] counts,
+                             float64_t[:, :] values,
+                             int64_t[:] bins):
     '''
     Only aggregates on axis=0
     '''
@@ -6805,10 +6805,10 @@ def group_count_bin_float64(ndarray[float64_t, ndim=2] out,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def group_count_bin_float32(ndarray[float32_t, ndim=2] out,
-                             ndarray[int64_t] counts,
-                             ndarray[float32_t, ndim=2] values,
-                             ndarray[int64_t] bins):
+def group_count_bin_float32(float32_t[:, :] out,
+                             int64_t[:] counts,
+                             float32_t[:, :] values,
+                             int64_t[:] bins):
     '''
     Only aggregates on axis=0
     '''
@@ -6839,10 +6839,10 @@ def group_count_bin_float32(ndarray[float32_t, ndim=2] out,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def group_count_bin_object(ndarray[object, ndim=2] out,
-                             ndarray[int64_t] counts,
-                             ndarray[object, ndim=2] values,
-                             ndarray[int64_t] bins):
+def group_count_bin_object(object[:, :] out,
+                             int64_t[:] counts,
+                             object[:, :] values,
+                             int64_t[:] bins):
     '''
     Only aggregates on axis=0
     '''
@@ -6873,10 +6873,10 @@ def group_count_bin_object(ndarray[object, ndim=2] out,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def group_count_bin_int64(ndarray[float64_t, ndim=2] out,
-                             ndarray[int64_t] counts,
-                             ndarray[int64_t, ndim=2] values,
-                             ndarray[int64_t] bins):
+def group_count_bin_int64(float64_t[:, :] out,
+                             int64_t[:] counts,
+                             int64_t[:, :] values,
+                             int64_t[:] bins):
     '''
     Only aggregates on axis=0
     '''
